@@ -79,6 +79,10 @@ module Data.TPTP (
   polymorphizeFirstOrder,
   monomorphizeFirstOrder,
 
+  -- * Quantified modal logic
+  QuantifiedModal(..),
+  Modality,
+
   -- * Units
   Formula(..),
   formulaLanguage,
@@ -145,6 +149,7 @@ data Language
   | FOF_ -- ^ __FOF__ - the language of full unsorted first-order logic.
   | TFF_ -- ^ __TFF__ - the language of full sorted first-order logic,
          -- both monomorphic (__TFF0__) and polymorphic (__TFF1__).
+  | QMF_ -- ^ __QMF__ - the language of quantified modal logic
   deriving (Eq, Show, Ord, Enum, Bounded)
 
 instance Named Language where
@@ -152,6 +157,7 @@ instance Named Language where
     CNF_ -> "cnf"
     FOF_ -> "fof"
     TFF_ -> "tff"
+    QMF_ -> "qmf"
 
 
 -- * Names
@@ -623,6 +629,17 @@ instance Named Connective where
     NegatedDisjunction  -> "~|"
     ReversedImplication -> "<="
 
+-- | The modal operators in quantified modal logic
+data Modality
+  = Necessary -- ^ The necessary operator.
+  | Possible -- ^ The possible operator.
+  deriving (Eq, Show, Ord, Enum, Bounded)
+
+instance Named Modality where
+  name = \case
+    Necessary -> "#box"
+    Possible  -> "#dia"
+
 -- | The formula in sorted or unsorted first-order logic.
 -- Syntactically, the difference between sorted and unsorted formulas is that
 -- quantified variables in the former might be annotated with their respective
@@ -634,6 +651,14 @@ data FirstOrder s
   | Connected (FirstOrder s) Connective (FirstOrder s)
   | Quantified Quantifier (NonEmpty (Var, s)) (FirstOrder s)
   deriving (Eq, Show, Ord, Functor, Traversable, Foldable)
+
+data QuantifiedModal
+  = MAtomic Literal
+  | MNegated QuantifiedModal
+  | MConnected QuantifiedModal Connective QuantifiedModal
+  | MQuantified Quantifier (NonEmpty Var) QuantifiedModal
+  | Modaled Modality QuantifiedModal
+   deriving (Eq, Show, Ord)
 
 -- | A smart constructor for 'Quantified' - constructs a quantified first-order
 -- formula with a possibly empty list of variables under the quantifier. If the
@@ -705,6 +730,7 @@ data Formula
   | FOF UnsortedFirstOrder
   | TFF0 MonomorphicFirstOrder
   | TFF1 PolymorphicFirstOrder
+  | QMF QuantifiedModal
   deriving (Eq, Show, Ord)
 
 -- | The TPTP language of a given TPTP formula.
@@ -714,6 +740,7 @@ formulaLanguage = \case
   FOF{}  -> FOF_
   TFF0{} -> TFF_
   TFF1{} -> TFF_
+  QMF{}  -> QMF_
 
 -- | The predefined role of a formula in a derivation. Theorem provers might
 -- introduce other roles.

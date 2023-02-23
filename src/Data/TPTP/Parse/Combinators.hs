@@ -101,7 +101,8 @@ skipLine = skipWhile (not . isEndOfLine)
 -- The grammar of the TPTP language only defines @%@,
 -- but some theorem provers in addition use @#@.
 skipBeginComment :: Parser ()
-skipBeginComment = skip (\c -> c == '%' || c == '#')
+-- skipBeginComment = skip (\c -> c == '%' || c == '#')
+skipBeginComment = skip (\c -> c == '%')
 {-# INLINE skipBeginComment #-}
 
 -- | Parse the contents of a single line comment.
@@ -393,6 +394,26 @@ polymorphicFirstOrder :: Parser PolymorphicFirstOrder
 polymorphicFirstOrder =  firstOrder (sorted (eitherP quantifiedSort tff1Sort))
                      <?> "tff1"
 
+-- | Parse a modal operator.
+modality :: Parser Modality
+modality = enum <?> "modality"
+-- modality = char '#' *> enum <?> "modality"
+{-# INLINE modality #-}
+
+-- | Given a parser for sort annotations, parse a formula in quantified modal logic.
+quantifiedModal :: Parser QuantifiedModal
+quantifiedModal = do
+  f <- unitary
+  option f (MConnected f <$> connective <*> quantifiedModal)
+  where
+    unitary =  MAtomic     <$> literal
+           <|> MNegated    <$> (op '~' *> unitary)
+           <|> MQuantified <$> quantifier <*> vs <* op ':' <*> unitary
+           <|> Modaled     <$> modality <* op ':' <*> unitary
+           <|> parens quantifiedModal
+           <?> "unitary quantified modal"
+
+    vs = bracketList1 var
 
 -- ** Units
 
@@ -402,6 +423,7 @@ formula = \case
   CNF_ -> CNF <$> clause <?> "cnf"
   FOF_ -> FOF <$> unsortedFirstOrder <?> "fof"
   TFF_ -> tff <$> polymorphicFirstOrder <?> "tff"
+  QMF_ -> QMF <$> quantifiedModal <?> "qmf"
   where
     tff f = case monomorphizeFirstOrder f of
      Just f' -> TFF0 f'
