@@ -81,7 +81,7 @@ module Data.TPTP (
 
   -- * Quantified modal logic
   QuantifiedModal(..),
-  Modality,
+  Modality(..),
 
   -- * Units
   Formula(..),

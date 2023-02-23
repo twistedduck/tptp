@@ -174,6 +174,21 @@ instance Arbitrary s => Arbitrary (FirstOrder s) where
     Quantified q vs f -> f : (Quantified q vs <$> shrink f)
     Connected   f c g -> f : g : (Connected <$> shrink f <*> pure c <*> shrink g)
 
+-- * Quantified modal logic
+
+deriving instance Generic Modality
+instance Arbitrary Modality where
+  arbitrary = genericArbitraryU
+
+deriving instance Generic (QuantifiedModal)
+instance Arbitrary (QuantifiedModal) where
+  arbitrary = genericArbitraryRec (3 % 2 % 2 % 1 % 1 % ())
+  shrink = \case
+    MAtomic          l -> MAtomic <$> shrink l
+    MNegated         f -> f : (MNegated <$> shrink f)
+    MConnected   f c g -> f : g : (MConnected <$> shrink f <*> pure c <*> shrink g)
+    MQuantified q vs f -> f : (MQuantified q vs <$> shrink f)
+    Modaled        m f -> f : (Modaled m <$> shrink f)
 
 -- * Units
 
@@ -185,6 +200,7 @@ instance Arbitrary Formula where
     FOF  f -> FOF  <$> shrink f
     TFF0 f -> TFF0 <$> shrink f
     TFF1 f -> TFF1 <$> shrink f
+    QMF  f -> QMF  <$> shrink f
 
 deriving instance Generic Role
 instance Arbitrary Role where
