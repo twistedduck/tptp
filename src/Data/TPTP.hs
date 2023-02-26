@@ -629,17 +629,6 @@ instance Named Connective where
     NegatedDisjunction  -> "~|"
     ReversedImplication -> "<="
 
--- | The modal operators in quantified modal logic
-data Modality
-  = Necessary -- ^ The necessary operator.
-  | Possible -- ^ The possible operator.
-  deriving (Eq, Show, Ord, Enum, Bounded)
-
-instance Named Modality where
-  name = \case
-    Necessary -> "#box"
-    Possible  -> "#dia"
-
 -- | The formula in sorted or unsorted first-order logic.
 -- Syntactically, the difference between sorted and unsorted formulas is that
 -- quantified variables in the former might be annotated with their respective
@@ -651,14 +640,6 @@ data FirstOrder s
   | Connected (FirstOrder s) Connective (FirstOrder s)
   | Quantified Quantifier (NonEmpty (Var, s)) (FirstOrder s)
   deriving (Eq, Show, Ord, Functor, Traversable, Foldable)
-
-data QuantifiedModal
-  = MAtomic Literal
-  | MNegated QuantifiedModal
-  | MConnected QuantifiedModal Connective QuantifiedModal
-  | MQuantified Quantifier (NonEmpty Var) QuantifiedModal
-  | Modaled Modality QuantifiedModal
-   deriving (Eq, Show, Ord)
 
 -- | A smart constructor for 'Quantified' - constructs a quantified first-order
 -- formula with a possibly empty list of variables under the quantifier. If the
@@ -721,6 +702,26 @@ monomorphizeFirstOrder :: PolymorphicFirstOrder -> Maybe MonomorphicFirstOrder
 monomorphizeFirstOrder = traverse (traverse monomorphize)
   where monomorphize = either (const Nothing) monomorphizeTFF1Sort
 
+-- * Quantified modal logic
+
+-- | The modal operators in quantified modal logic
+data Modality
+  = Necessary -- ^ The necessary operator.
+  | Possible -- ^ The possible operator.
+  deriving (Eq, Show, Ord, Enum, Bounded)
+
+instance Named Modality where
+  name = \case
+    Necessary -> "#box"
+    Possible  -> "#dia"
+
+data QuantifiedModal
+  = MAtomic Literal
+  | MNegated QuantifiedModal
+  | MConnected QuantifiedModal Connective QuantifiedModal
+  | MQuantified Quantifier (NonEmpty Var) QuantifiedModal
+  | Modaled Modality QuantifiedModal
+   deriving (Eq, Show, Ord)
 
 -- * Units
 

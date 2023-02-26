@@ -229,6 +229,39 @@ instance Pretty s => Pretty (FirstOrder s) where
         vs' = fmap var (Foldable.toList vs)
         var (v, s) = pretty v <> pretty s
 
+-- * Quantified modal logic
+
+instance Pretty Modality where
+  pretty = pretty . name
+
+munitary :: QuantifiedModal -> Bool
+munitary = \case
+  MAtomic{}     -> True
+  MNegated{}    -> True
+  MQuantified{} -> True
+  MConnected{}  -> False
+  Modaled{}     -> True
+
+mppretty :: (QuantifiedModal -> Bool) -> QuantifiedModal -> Doc ann
+mppretty skipParens f
+  | skipParens f = pretty f
+  | otherwise    = parens (pretty f)
+
+munder :: Connective -> QuantifiedModal -> Bool
+munder c = \case
+  MConnected _ c' _ -> c' == c && isAssociative c
+  f -> munitary f
+
+instance Pretty (QuantifiedModal) where
+  pretty = \case
+    MAtomic l -> pretty l
+    MNegated f -> "~" <+> mppretty munitary f
+    MConnected f c g -> mppretty (munder c) f <+> pretty c <+> mppretty (munder c) g
+    Modaled m f -> pretty m  <> ":" <+> mppretty munitary f
+    MQuantified q vs f -> pretty q <+> list vs' <> ":" <+> mppretty munitary f
+      where
+        vs' = fmap pretty (Foldable.toList vs)
+        -- var (v, s) = pretty v <> pretty s
 
 -- ** Units
 
